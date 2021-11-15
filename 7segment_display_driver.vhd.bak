@@ -1,32 +1,9 @@
-entity SevenSegmentDisplay is
+entity RTC is
 	port(
-		clk : in std_logic;
-		nReset : in std_logic;
-		
-		-- Internal interface (i.e. Avalon slave).
-		address : in std_logic_vector(3-1 downto 0);
-		write : in std_logic;
-		read : in std_logic;
-		
-		writedata : in std_logic_vector(8-1 downto 0);
-		readdata : out std_logic_vector(8-1 downto 0);
-		
-		-- External interface (i.e. conduit).
-		SelSeg           : out   std_logic_vector(7 downto 0);
-      Reset_Led        : out   std_logic;
-      nSelDig          : out   std_logic_vector(5 downto 0);
-		
-		);
-	end SevenSegmentDisplay;
+	);
+end entity RTC
 
-architecture rtl of SevenSegmentDisplay is
-
-	--Bus
-	signal iRegSec : std_logic_vector(6-1 downto 0);
-	signal iRegMin : std_logic_vector(6-1 downto 0);
-	signal iRegHr : std_logic_vector(5-1 downto 0);
-	signal iRegFun : std_logic_vector(2-1 downto 0); -- 00 Start, 01 stop, 10 reset
-	
+architecture rtl of RTC is
 	-- CLOCK IS 50 MHz
 	constant c_sec_in_min:natural = 60;
 	constant c_min_in_hour:natural  = 60;
@@ -51,45 +28,6 @@ architecture rtl of SevenSegmentDisplay is
 	signal s_Sel_seg: std_logic_vector(7 downto 0);
 	
 	begin
-	
-	-- Avalon slave write to registers.
-	process(clk, nReset)
-	begin
-		if nReset = '0' then
-			iRegSec <= (others => '0');
-			iRegMin <= (others => '0');
-			iRegHr <= (others => '0');
-			iRegFun <= (others => '0');
-
-
-		elsif rising_edge(clk) then
-			if write = '1' then
-				case Address is
-					when "00" => iRegSec <= writedata;
-					when "01" => iRegMin <= writedata;
-					when "10" => iRegHr <=  writedata;
-					when "11" => iRegFun <= writedata;
-					when others => null;
-				end case;
-			end if;
-		end if;
-	end process;
-
-	-- Avalon slave read from registers.
-	process(clk)
-	begin
-		if rising_edge(clk) then	
-			readdata <= (others => '0');
-			if read = '1' then
-				case address is
-					when "00" => readdata <= iRegSec;
-					when "01" => readdata <= iRegMin;
-					when "10" => readdata <= iRegHr;
-					when others => null;
-				end case;
-			end if;
-		end if;
-	end process;
 
 	counters: process(clk) is
 	begin
