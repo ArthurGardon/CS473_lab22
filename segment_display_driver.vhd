@@ -9,7 +9,7 @@ entity SevenSegmentDisplay is
 		nReset : in std_logic;
 		
 		-- Internal interface (i.e. Avalon slave).
-		address : in std_logic_vector(3-1 downto 0);
+		address : in std_logic_vector(2-1 downto 0);
 		write : in std_logic;
 		read : in std_logic;
 		
@@ -41,9 +41,9 @@ architecture rtl of SevenSegmentDisplay is
 	signal r_min: natural range c_min_in_hour downto 0:=0;
 	signal r_hour: natural range c_hour_in_day downto 0:=0;
 	
-	constant c_1Hz:natural := 50000000;
-	constant c_6000Hz:natural := 8333/2;
-	constant c_1000Hz:natural := 50000;
+	constant c_1Hz:natural := 5000;
+	constant c_6000Hz:natural := 30;
+	constant c_1000Hz:natural := 5;
 	
 	signal r_1Hz : natural range c_1Hz downto 0:=0;
 	
@@ -60,7 +60,7 @@ architecture rtl of SevenSegmentDisplay is
 	begin
 	
 	-- Avalon slave write to registers.
-	process(clk, nReset)
+	writing: process(clk, nReset)
 	begin
 		if nReset = '0' then
 			iRegSec <= (others => '0');
@@ -75,15 +75,15 @@ architecture rtl of SevenSegmentDisplay is
 					when "00" => iRegSec <= writedata;
 					when "01" => iRegMin <= writedata;
 					when "10" => iRegHr <=  writedata;
-					when "11" => iRegFun <= writedata;
+					when "11" => iRegFun <= writedata(2-1 downto 0);
 					when others => null;
 				end case;
 			end if;
 		end if;
-	end process;
+	end process writing;
 
 	-- Avalon slave read from registers.
-	process(clk)
+	reading: process(clk)
 	begin
 		if rising_edge(clk) then	
 			readdata <= (others => '0');
@@ -96,7 +96,7 @@ architecture rtl of SevenSegmentDisplay is
 				end case;
 			end if;
 		end if;
-	end process;
+	end process reading;
 
 	counters: process(clk) is
 	begin

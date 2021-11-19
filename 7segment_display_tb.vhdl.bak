@@ -1,0 +1,137 @@
+
+-- Standard library
+library ieee;
+library std;
+-- Standard packages
+use std.env.all;
+use ieee.std_logic_1164.all;
+
+entity arbiter_tb is
+end arbiter_tb;
+
+--=============================================================================
+-- ARCHITECTURE DECLARATION
+--=============================================================================
+architecture tb of arbiter_tb is
+
+  constant CLK_PER : time    := 8 ns;   -- 125 MHz clk freq
+  constant CLK_LIM : integer := 2**22;  -- Stops simulation from running forever if circuit is not correct
+  constant DELAY : time := 32ns; 
+  
+  signal CLKxCI  : std_logic := '0';
+  signal RSTxRI : std_logic := '1';
+
+  signal Push0xSI : std_logic := '0';
+  signal Push1xSI : std_logic := '0';
+
+  signal RLED0xSO  : std_logic;
+  signal GLED0xSO  : std_logic;
+  signal RLED1xSO  : std_logic;
+  signal GLED1xSO  : std_logic;
+
+--=============================================================================
+-- COMPONENT DECLARATIONS
+--=============================================================================
+  component arbiter
+        port(
+        CLKxCI : in std_logic;
+        RSTxRI : in std_logic;
+        
+        Push0xSI : in std_logic;
+        Push1xSI : in std_logic;
+        
+        RLED0xSO : out std_logic;
+        GLED0xSO : out std_logic;
+        RLED1xSO : out std_logic;
+        GLED1xSO : out std_logic              
+        );
+    end component;
+
+
+--=============================================================================
+-- ARCHITECTURE BEGIN
+--=============================================================================
+begin
+
+--=============================================================================
+-- COMPONENT INSTANTIATIONS
+--=============================================================================
+  dut: arbiter
+    PORT MAP(
+        CLKxCI => CLKxCI,
+        RSTxRI => RSTxRI, 
+        Push0xSI => Push0xSI,
+        Push1xSI => Push1xSI,
+
+        RLED0xSO => RLED0xSO,
+        GLED0xSO => GLED0xSO,
+        RLED1xSO => RLED1xSO,
+        GLED1xSO => GLED1xSO
+    );
+--=============================================================================
+-- CLOCK PROCESS
+-- Process for generating the clock signal
+--=============================================================================
+  p_clock: process
+  begin
+    CLKxCI <= '0';
+    wait for CLK_PER / 2;
+    CLKxCI <= '1';
+    wait for CLK_PER / 2;
+  end process;
+
+--=============================================================================
+-- RESET PROCESS
+-- Process for generating the reset signal
+--=============================================================================
+  p_reset: process
+  begin
+    -- Reset the registers
+    wait for CLK_PER;
+    RSTxRI <= '1';
+    wait for CLK_PER;
+    RSTxRI <= '0';
+    wait;
+  end process;
+
+--=============================================================================
+-- TEST PROCESSS
+--=============================================================================
+  p_stim: process
+
+
+  begin
+    wait until RSTxRI = '0';
+    wait for 4*CLK_PER;
+    Push0xSI <= '1';
+    wait for 4*CLK_PER;
+    Push0xSI <= '0';
+    wait for 4*CLK_PER;
+    Push0xSI <= '1';
+    wait for 4*CLK_PER;
+    Push1xSI <= '1';
+    wait for 4*CLK_PER;
+    Push1xSI <= '0';
+    wait for 4*CLK_PER;
+    Push0xSI <= '0';
+    wait for 2*CLK_PER;
+    Push0xSI <= '1';
+    wait for 4*CLK_PER;
+    Push1xSI <= '1';
+    wait for 12*CLK_PER;
+    Push0xSI <= '0';
+    wait for 2*CLK_PER;
+    Push0xSI <= '1';
+    
+
+    
+    wait for 60*CLK_PER;
+
+    --wait for 15*CLK_PER;
+    stop(0);
+
+  end process;
+end tb;
+--=============================================================================
+-- ARCHITECTURE END
+--=============================================================================
