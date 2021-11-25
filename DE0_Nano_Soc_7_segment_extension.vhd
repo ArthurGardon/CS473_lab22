@@ -45,15 +45,15 @@ entity DE0_Nano_Soc_7_segment_extension is
 --        SW               : in    std_logic_vector(3 downto 0);
 
         -- GPIO_0
-        GPIO_0           : inout std_logic_vector(35 downto 0);
+        --GPIO_0           : inout std_logic_vector(35 downto 0);
 
         -- Extension board 7 segments
         SelSeg           : out   std_logic_vector(7 downto 0);
         Reset_Led        : out   std_logic;
-        nSelDig          : out   std_logic_vector(5 downto 0);
-        SwLed            : in    std_logic_vector(7 downto 0);
-        nButton          : in    std_logic_vector(3 downto 0);
-        LedButton        : out   std_logic_vector(3 downto 0)
+        nSelDig          : out   std_logic_vector(5 downto 0)
+--        SwLed            : in    std_logic_vector(7 downto 0);
+--        nButton          : in    std_logic_vector(3 downto 0);
+--        LedButton        : out   std_logic_vector(3 downto 0)
 
 --        -- HPS
 --        HPS_CONV_USB_N   : inout std_logic;
@@ -108,7 +108,28 @@ entity DE0_Nano_Soc_7_segment_extension is
 end entity DE0_Nano_Soc_7_segment_extension;
 
 architecture rtl of DE0_Nano_Soc_7_segment_extension is
+
+	component system is
+		port (
+			clk_clk               : in std_logic                    := 'X';             -- clk
+			reset_reset_n         : in std_logic                    := 'X';             -- reset_n
+			rtc_conduit_reset_led : out std_logic                    := 'X';             -- reset_led
+			rtc_conduit_nseldig   : out std_logic_vector(5 downto 0) := (others => 'X'); -- nseldig
+			rtc_conduit_selseg    : out std_logic_vector(7 downto 0) := (others => 'X')  -- selseg
+		);
+	end component system;
+
+
 begin
+
+	u0 : component system
+		port map (
+			clk_clk               => FPGA_CLK1_50,               --         clk.clk
+			reset_reset_n         => KEY_N(0),         --       reset.reset_n
+			rtc_conduit_reset_led => Reset_Led, -- rtc_conduit.reset_led
+			rtc_conduit_nseldig   => nSelDig,   --            .nseldig
+			rtc_conduit_selseg    => SelSeg     --            .selseg
+		);
 
 
 end;

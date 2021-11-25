@@ -20,6 +20,8 @@ entity SevenSegmentDisplay is
 		SelSeg           : out   std_logic_vector(7 downto 0);
       Reset_Led        : out   std_logic;
       nSelDig          : out   std_logic_vector(5 downto 0)
+
+      --o_6000Hz         : out std_logic
 		
 		);
 	end SevenSegmentDisplay;
@@ -37,13 +39,13 @@ architecture rtl of SevenSegmentDisplay is
 	constant c_min_in_hour:natural := 60;
 	constant c_hour_in_day:natural := 24;
 	
-	signal r_sec : natural range c_sec_in_min downto 0:=0;
-	signal r_min: natural range c_min_in_hour downto 0:=0;
-	signal r_hour: natural range c_hour_in_day downto 0:=0;
+	signal r_sec : natural range c_sec_in_min downto 0;
+	signal r_min: natural range c_min_in_hour downto 0;
+	signal r_hour: natural range c_hour_in_day downto 0;
 	
-	constant c_1Hz:natural := 50000000;
-	constant c_6000Hz:natural := 8333/2;
-	constant c_1000Hz:natural := 50000;
+	constant c_1Hz:natural := 5000;
+	constant c_6000Hz:natural := 30;
+	constant c_1000Hz:natural := 5;
 	
 	signal r_1Hz : natural range c_1Hz downto 0:=0;
 	
@@ -60,63 +62,80 @@ architecture rtl of SevenSegmentDisplay is
 	begin
 	
 	-- Avalon slave write to registers.
-	process(clk, nReset)
-	begin
-		if nReset = '0' then
-			iRegSec <= (others => '0');
-			iRegMin <= (others => '0');
-			iRegHr <= (others => '0');
-			iRegFun <= (others => '0');
-
-
-		elsif rising_edge(clk) then
-			if write = '1' then
-				case Address is
-					when "00" => iRegSec <= writedata;
-					when "01" => iRegMin <= writedata;
-					when "10" => iRegHr <=  writedata;
-					when "11" => iRegFun <= writedata;
-					when others => null;
-				end case;
-			end if;
-		end if;
-	end process;
-
+--	writing: process(clk, nReset)
+--	begin
+--		if nReset = '0' then
+--			iRegSec <= (others => '0');
+--			iRegMin <= (others => '0');
+--			iRegHr <= (others => '0');
+--			iRegFun <= (others => '0');
+--
+--
+--		elsif rising_edge(clk) then
+--			if write = '1' then
+--				case Address is
+--					when "00" => iRegSec <= writedata;
+--					when "01" => iRegMin <= writedata;
+--					when "10" => iRegHr <=  writedata;
+--					when "11" => iRegFun <= writedata(2-1 downto 0);
+--					when others => null;
+--				end case;
+--			end if;
+--		end if;
+--	end process writing;
+--
+--
 	-- Avalon slave read from registers.
-	process(clk)
+	reading: process(clk)
 	begin
 		if rising_edge(clk) then	
 			readdata <= (others => '0');
 			if read = '1' then
 				case address is
-					when "00" => readdata <= iRegSec;
-					when "01" => readdata <= iRegMin;
-					when "10" => readdata <= iRegHr;
+					when "00" => readdata <= std_logic_vector( to_unsigned( r_sec, readdata'length));
+					when "01" => readdata <= std_logic_vector( to_unsigned( r_min, readdata'length));
+					when "10" => readdata <= std_logic_vector( to_unsigned( r_hour, readdata'length));
 					when others => null;
 				end case;
 			end if;
 		end if;
-	end process;
+	end process reading;
 
 	counters: process(clk) is
 	begin
-		if rising_edge(clk) then
-			if r_1Hz = c_1Hz -1 then
-				r_1Hz <= 0;
-				r_sec <= r_sec +1;
-			else
-				r_1Hz <= r_1Hz +1;
+		if nReset = '0' or iRegFun = "10" then
+			r_sec <= 0;
+			r_min <= 0;
+			r_hour <= 0;
+			iRegFun <= null;
+		elsif rising_edge(clk) then
+			if write = '1' then
+				case Address is
+					when "00" => r_sec <= to_integer(unsigned(writedata));
+					when "01" => r_min <= to_integer(unsigned(writedata));
+					when "10" => r_hour <=  to_integer(unsigned(writedata));
+					when "11" => iRegFun <= writedata(2-1 downto 0);
+					when others => null;
+				end case;
 			end if;
-			if r_sec = c_sec_in_min -1 then
-				r_sec <= 0;
-				r_min <= r_min + 1;
-			end if;
-			if r_min = c_min_in_hour -1 then
-				r_min <= 0;
-				r_hour <= r_hour + 1;
-			end if;
-			if r_hour = c_hour_in_day -1 then
-				r_hour <= 0;
+			if iRegFun = "00" then
+				if r_1Hz = c_1Hz -1 then
+					r_1Hz <= 0;
+					r_sec <= r_sec +1;
+				else
+					r_1Hz <= r_1Hz +1;
+				end if;
+				if r_sec = c_sec_in_min then
+					r_sec <= 0;
+					r_min <= r_min + 1;
+				end if;
+				if r_min = c_min_in_hour then
+					r_min <= 0;
+					r_hour <= r_hour + 1;
+				end if;
+				if r_hour = c_hour_in_day then
+					r_hour <= 0;
+				end if;
 			end if;
 		end if;
 	end process counters;
@@ -124,78 +143,93 @@ architecture rtl of SevenSegmentDisplay is
 	disp_counters: process(clk) is 
 	begin
 		if rising_edge(clk) then
-			if r_6000Hz = c_6000Hz -1 then
-				r_6000Hz <= 0;
-				s_6000Hz <= not s_6000Hz;
-				if s_6000Hz = '1' then
+			if s_6000Hz = '1' then
+				s_6000Hz <= '0';
+			end if;
+			if s_reset_led = '0' then
+				if r_6000Hz = c_6000Hz -1 then
+					r_6000Hz <= 0;
+					s_6000Hz <= '1';
 					s_disp_active <= s_disp_active +1;
+				else
+					r_6000Hz <= r_6000Hz + 1 ;
+				end if;
+				if s_disp_active = c_nb_disp then
+					s_reset_led <= '1';
+					--s_disp_active <= 6; --none
 				end if;
 			else
-				r_6000Hz <= r_6000Hz + 1 ;
-			end if;
-			if s_disp_active = c_nb_disp then
+				s_reset_led <= '0';
 				s_disp_active <= 0;
-				s_reset_led <= not s_reset_led;
-				Reset_Led <= s_reset_led;
 			end if;
+			Reset_Led <= s_reset_led;
+			
 			-- i didn't manage to use bitshifting i give up
-			case s_disp_active is
-				when 0 => nSelDig <= "000001";
-				when 1 => nSelDig <= "000010";
-				when 2 => nSelDig <= "000100";
-				when 3 => nSelDig <= "001000";
-				when 4 => nSelDig <= "010000";
-				when 5 => nSelDig <= "100000";
-				when others => nSelDig <= "000000";
-			end case;
 		end if;
 	end process disp_counters;
-	
-	display: process(clk) is
+
+	process(s_disp_active) is
 	begin
-		if s_6000Hz = '1' then
+
 			case s_disp_active is
-				when 0 =>
-					s_curr_nb <= r_sec mod 10;
-				when 1 => 
-					s_curr_nb <= r_sec / 10;
-				when 2 =>
-					s_curr_nb <= r_min mod 10;
-				when 3 =>
-					s_curr_nb <= r_min / 10;
-				when 4 =>
-					s_curr_nb <= r_hour mod 10;
-				when 5 =>
-					s_curr_nb <= r_hour / 10;
-				when others =>
-					s_curr_nb <= 0;
+				when 0 => nSelDig <= "111110";
+				when 1 => nSelDig <= "111101";
+				when 2 => nSelDig <= "111011";
+				when 3 => nSelDig <= "110111";
+				when 4 => nSelDig <= "101111";
+				when 5 => nSelDig <= "011111";
+				when others => nSelDig <= "000000";
 			end case;
-			
+
+	end process;
+	
+	display: process(s_disp_active) is
+	begin
+
+				case s_disp_active is
+					when 0 =>
+						s_curr_nb <= (r_sec mod 10);
+					when 1 => 
+						s_curr_nb <= r_sec / 10;
+					when 2 =>
+						s_curr_nb <= r_min mod 10;
+					when 3 =>
+						s_curr_nb <= r_min / 10;
+					when 4 =>
+						s_curr_nb <= r_hour mod 10;
+					when 5 =>
+						s_curr_nb <= r_hour / 10;
+					when others =>
+						s_curr_nb <= 0;
+				end case;
+
+	end process display;
+
+	process(s_curr_nb) is
+	begin
 			case s_curr_nb is
 				when 0 =>
-					s_Sel_seg <= "00111111";
+					SelSeg <= "00111111";
 				when 1 =>
-					s_Sel_seg <= "00000110";
+					SelSeg <= "00000110";
 				when 2 =>
-					s_Sel_seg <= "01011011";
+					SelSeg <= "01011011";
 				when 3 =>
-					s_Sel_seg <= "01001111";
+					SelSeg <= "01001111";
 				when 4 =>
-					s_Sel_seg <= "01100110";
+					SelSeg <= "01100110";
 				when 5 =>
-					s_Sel_seg <= "01101101";
+					SelSeg <= "01101101";
 				when 6 =>
-					s_Sel_seg <= "01111101";
+					SelSeg <= "01111101";
 				when 7 =>
-					s_Sel_seg <= "00000111";
+					SelSeg <= "00000111";
 				when 8=>
-					s_Sel_seg <= "01111111";
+					SelSeg <= "01111111";
 				when 9 =>
-					s_Sel_seg <= "01101111";
-				when others => s_Sel_seg <= "00000000";
-				end case;
-				SelSeg <= s_Sel_seg;
-			end if;
-	end process display;
+					SelSeg <= "01101111";
+				when others => SelSeg <= "00000000";
+			end case;
+	end process;
 	
 end;

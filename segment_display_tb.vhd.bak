@@ -81,7 +81,6 @@ begin
 	SelSeg => SelSeg,
 	Reset_Led => Reset_Led,
 	nSelDig => nSelDig
-		  
     );
 --=============================================================================
 -- CLOCK PROCESS
@@ -116,20 +115,43 @@ begin
 
 
   begin
-    wait until nReset = '1';
-    wait for 4*CLK_PER;
-	 address <= "11";
-	
+    	wait until nReset = '1';
+    	wait for 4*CLK_PER;
+	address <= "11";
 	wait for 4*CLK_PER;
-	 writedata <= "00000000";
-	 wait for 2*CLK_PER;
-    	write <= '1';
+	writedata <= "00000000";
 	wait for 2*CLK_PER;
-    	write <= '0';
+	  	write <= '1';
+	wait for 2*CLK_PER;
+	  	write <= '0';
 	wait for 10*CLK_PER;
-writedata <= "00000000";
-    
-
+	address <= "10";
+	wait for 4*CLK_PER;
+	writedata <= "00000100";
+	wait for 2*CLK_PER;
+	  	write <= '1';
+	wait for 2*CLK_PER;
+	  	write <= '0';
+	wait for 10*CLK_PER;
+	writedata <= "00000000";
+	wait for 20000*CLK_PER;
+	address <= "11";
+	wait for 4 * CLK_PER;
+	writedata <= "00000010";
+	wait for 2*CLK_PER;
+	  	write <= '1';
+	wait for 2*CLK_PER;
+	  	write <= '0';
+	wait for 10*CLK_PER;
+	address <= "11";
+	wait for 4*CLK_PER;
+	writedata <= "00000000";
+	wait for 2*CLK_PER;
+	  	write <= '1';
+	wait for 2*CLK_PER;
+	  	write <= '0';
+	wait for 10*CLK_PER;
+	  
     
    
 
