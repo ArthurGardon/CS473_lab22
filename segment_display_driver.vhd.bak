@@ -29,10 +29,10 @@ entity SevenSegmentDisplay is
 architecture rtl of SevenSegmentDisplay is
 
 	--Bus
-	signal iRegSec : std_logic_vector(6-1 downto 0);
-	signal iRegMin : std_logic_vector(6-1 downto 0);
-	signal iRegHr : std_logic_vector(5-1 downto 0);
-	signal iRegFun : std_logic_vector(2-1 downto 0); -- 00 Start, 01 stop, 10 reset
+--	signal iRegSec : std_logic_vector(6-1 downto 0);
+--	signal iRegMin : std_logic_vector(6-1 downto 0);
+--	signal iRegHr : std_logic_vector(5-1 downto 0);
+	signal iRegFun : std_logic_vector(2-1 downto 0) := "00"; -- 00 Start, 01 stop, 10 reset
 	
 	-- CLOCK IS 50 MHz
 	constant c_sec_in_min:natural := 60;
@@ -43,9 +43,9 @@ architecture rtl of SevenSegmentDisplay is
 	signal r_min: natural range c_min_in_hour downto 0;
 	signal r_hour: natural range c_hour_in_day downto 0;
 	
-	constant c_1Hz:natural := 5000;
-	constant c_6000Hz:natural := 30;
-	constant c_1000Hz:natural := 5;
+	constant c_1Hz:natural := 50000000;
+	constant c_6000Hz:natural := 8333;
+	constant c_1000Hz:natural := 50000;
 	
 	signal r_1Hz : natural range c_1Hz downto 0:=0;
 	
@@ -107,7 +107,7 @@ architecture rtl of SevenSegmentDisplay is
 			r_sec <= 0;
 			r_min <= 0;
 			r_hour <= 0;
-			iRegFun <= null;
+			iRegFun <= "01"; --once reset, go to stop mode
 		elsif rising_edge(clk) then
 			if write = '1' then
 				case Address is
@@ -125,15 +125,15 @@ architecture rtl of SevenSegmentDisplay is
 				else
 					r_1Hz <= r_1Hz +1;
 				end if;
-				if r_sec = c_sec_in_min then
+				if r_sec >= c_sec_in_min then
 					r_sec <= 0;
 					r_min <= r_min + 1;
 				end if;
-				if r_min = c_min_in_hour then
+				if r_min >= c_min_in_hour then
 					r_min <= 0;
 					r_hour <= r_hour + 1;
 				end if;
-				if r_hour = c_hour_in_day then
+				if r_hour >= c_hour_in_day then
 					r_hour <= 0;
 				end if;
 			end if;

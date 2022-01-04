@@ -13,8 +13,8 @@ entity SevenSegmentDisplay is
 		write : in std_logic;
 		read : in std_logic;
 		
-		writedata : in std_logic_vector(8-1 downto 0);
-		readdata : out std_logic_vector(8-1 downto 0);
+		WDataxDI : in std_logic_vector(32-1 downto 0);
+		RDataxDO : out std_logic_vector(32-1 downto 0);
 		
 		-- External interface (i.e. conduit).
 		SelSeg           : out   std_logic_vector(7 downto 0);
@@ -43,8 +43,8 @@ architecture rtl of SevenSegmentDisplay is
 	signal r_min: natural range c_min_in_hour downto 0;
 	signal r_hour: natural range c_hour_in_day downto 0;
 	
-	constant c_1Hz:natural := 50000000;
-	constant c_6000Hz:natural := 8333;
+	constant c_1Hz:natural := 50;
+	constant c_6000Hz:natural := 8;
 	constant c_1000Hz:natural := 50000;
 	
 	signal r_1Hz : natural range c_1Hz downto 0:=0;

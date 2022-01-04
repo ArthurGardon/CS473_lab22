@@ -31,12 +31,6 @@ constant TEST : time := 1ns;
    signal Reset_Led        :    std_logic;
    signal nSelDig          :    std_logic_vector(5 downto 0);
 
-  --Bus
-  signal iRegSec : std_logic_vector(6-1 downto 0);
-  signal iRegMin : std_logic_vector(6-1 downto 0);
-  signal iRegHr : std_logic_vector(5-1 downto 0);
-  signal iRegFun : std_logic_vector(2-1 downto 0); -- 00 Start, 01 stop, 10 reset
-
 --=============================================================================
 -- COMPONENT DECLARATIONS
 --=============================================================================
@@ -159,11 +153,7 @@ begin
 	  	write <= '1';
 	wait for 2*CLK_PER;
 	  	write <= '0';
-	  
-    
-   
-
-    --wait for 15*CLK_PER;
+	 
    wait;
   end process;
 
